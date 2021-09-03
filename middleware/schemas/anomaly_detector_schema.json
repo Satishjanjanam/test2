@@ -1,0 +1,17 @@
+{ 
+    "$schema":"http://json-schema.org/draft-04/schema#",
+    "title":"Anomaly Detector Schema",
+    "type":"object",
+    "required":[ 
+        "metric_name",
+        "time_period"
+    ],
+    "properties":{ 
+        "metric_name":{
+            "type":"string"
+        },
+        "time_period": {
+            "type": "object"
+        }
+    }
+}

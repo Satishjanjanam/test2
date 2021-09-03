@@ -1,0 +1,6 @@
+{
+    "service_anomaly_detector":"anomalydetector",
+    "static": "static",
+    "base_url":"api/v1",
+    "base_url_v2": "api/v2"
+}

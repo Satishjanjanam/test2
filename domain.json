@@ -1,0 +1,171 @@
+{
+    
+    "metrics": [
+        {
+            "primary_metric_name": "visits",
+            "synonyms": ["sessions", "traffic"],
+            "secondary_metric_name": [
+                "unique_visitors", "orders", "revenue", "conversion_rate", "aov"],
+            "compare_metrics": [
+                "Unique Visitors", "Orders", "Revenue", "Conversion Rate", "Average Order Value"
+            ]
+        },
+
+        {
+            "primary_metric_name": "product_views",
+            "synonyms": ["product detail", "product page", "product views", "product view"],
+            "secondary_metric_name": [
+                "cart_additions", "checkouts", "orders", "revenue", "conversion_rate"],
+            "compare_metrics": [
+                "Cart Additions", "Checkouts", "Orders", "Revenue", "Conversion Rate"
+            ]
+        },
+
+        {
+            "primary_metric_name": "revenue",
+            "synonyms": ["sales", "gross revenue", "demand revenue", "total revenue", "total sales"],
+            "secondary_metric_name": [
+                "visits", "unique_visitors", "orders", "conversion_rate", "aov", "upt"],
+            "compare_metrics": [
+                "Visits", "Unique Visitors", "Orders", "Conversion Rate", "Average Order Value", "Units Per Transaction"]
+        },
+
+        {
+            "primary_metric_name": "unique_visitors",
+            "synonyms": ["visitors", "visitor", "users", "unique visitors", "unique visitor"],
+            "secondary_metric_name": [
+                "visits", "orders", "revenue", "conversion_rate"],
+            "compare_metrics": [
+                "Visits", "Orders", "Revenue", "Conversion Rate"]
+            
+        },
+        {
+            "primary_metric_name": "cart_open",
+            "synonyms": ["carts", "cart opens", "cart open"],
+            "secondary_metric_name": ["checkouts", "orders"],
+            "compare_metrics": [
+                "Checkouts", "Orders"]
+            
+        },
+        {
+            "primary_metric_name": "cart_additions",
+            "synonyms": ["cart adds", "cart addition", "cart additions"],
+            "secondary_metric_name": [
+                "checkouts", "orders"],
+            "compare_metrics": [
+                "Checkouts", "Orders"]
+            
+        },
+        {
+            "primary_metric_name": "checkouts",
+            "synonyms": ["checkout initiations", "checkout"],
+            "secondary_metric_name": ["orders"],
+            "compare_metrics": ["Orders"]
+            
+        },
+        {
+            "primary_metric_name": "orders",
+            "synonyms": ["transactions", "transaction", "conversions", "conversion", "order"],
+            "secondary_metric_name": [
+                "visits", "unique_visitors", "revenue", "conversion_rate", "aov", "upt"],
+            "compare_metrics": [
+                "Visits", "Unique Visitors", "Revenue", "Conversion Rate", "Average Order Value", "Units Per Transaction"]
+            
+        },
+
+        {
+            "primary_metric_name": "units",
+            "synonyms": ["quantity", "qty", "pieces", "unit"],
+            "secondary_metric_name": [
+                "orders", "revenue", "conversion_rate", "aov", "upt"],
+            "compare_metrics": [
+                "Orders", "Revenue", "Conversion Rate", "Average Order Value", "Units Per Transaction"]
+            
+        },
+
+        {
+            "primary_metric_name": "aov",
+            "synonyms": ["average order value", "basket value", "average basket value"],
+            "secondary_metric_name": [
+                "visits", "unique_visitors", "orders", "revenue", "conversion_rate", "upt"],
+            "compare_metrics": [
+                "Visits", "Unique Visitors", "Orders", "Revenue", "Conversion Rate", "Units Per Transaction"]
+            
+        },
+        {
+            "primary_metric_name": "upt",
+            "synonyms": ["units per transaction", "units per order", "upo", "basket size"],
+            "secondary_metric_name": [
+                "visits", "unique_visitors", "orders", "revenue", "conversion_rate", "aov"],
+            "compare_metrics": [
+                "Visits", "Unique Visitors", "Orders", "Revenue", "Conversion Rate", "Average Order Value"]
+            
+        },
+        {
+            "primary_metric_name": "cart_abandonment_rate",
+            "synonyms": ["cart abandonment", "cart abandonment rate"],
+            "secondary_metric_name": [
+                "visits", "unique_visitors", "orders", "revenue", "conversion_rate", "aov", "upt"],
+            "compare_metrics": [
+                "Visits", "Unique Visitors", "Orders", "Revenue", "Conversion Rate", "Average Order Value", "Units Per Transaction"]
+            
+        },
+
+        {
+            "primary_metric_name": "conversion_rate",
+            "synonyms": ["conversion ratio", "conversion rate"],
+            "secondary_metric_name": [
+                "visits", "unique_visitors", "orders", "revenue", "aov", "upt"],
+            "compare_metrics": [
+                "Visits", "Unique Visitors", "Orders", "Revenue", "Average Order Value", "Units Per Transaction"]
+            
+        },
+        {
+            "primary_metric_name": "ctr",
+            "synonyms": ["clickthrough rate", "clickthrough %"],
+            "secondary_metric_name": [
+                "product_views", "orders", "revenue", "conversion_rate"],
+            "compare_metrics": [
+                "Product Views", "Orders", "Revenue", "Conversion Rate"]
+            
+        }
+    ],
+
+    "narratives": [
+
+        {
+            "id": 1,
+            "template": "The ${metric_name} for the week starting (${start_date}) saw a ${metric_spike_drop} of ${val_spike_drop}% ${metric_above_below} the average value expected for this period and had a value of ${metric_val}",
+            "valid_for": ["revenue", "conversion_rate", "upt", "aov"],
+            "is_generic": false
+        },
+        {    
+            "id": 2,
+            "template": "The number of ${metric_name} for the week starting (${start_date}) saw a ${metric_spike_drop} of ${val_spike_drop}% ${metric_above_below} the average value expected for this period and had a value of ${metric_val}",
+            "valid_for": ["orders", "visits", "unique visitors"],
+            "is_generic": false
+        },
+        {
+            "id": 3,
+            "template": "The ${metric_name} for the week starting (${start_date}) saw a ${metric_spike_drop} of ${val_spike_drop}% ${metric_above_below} the average value expected for this period and had a value of ${metric_val}",
+            "valid_for": [],
+            "is_generic": true
+        }
+
+    ],
+
+    "graph": {
+        "type": "trend_line",
+        "duration": "last 8 weeks"
+    },
+
+    "db_schema": {
+        "table_name": "adobe_geostate",
+        "col_dimensions": ["country", "city"],
+        "col_metrics": [
+            "unique_visitors", "visits", "orders", "units", "revenue", "aov",
+            "upt", "click_throughs"
+        ],
+        "col_timeseries": ["week_start_date"]
+    }
+}

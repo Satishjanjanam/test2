@@ -46,19 +46,33 @@ class RuleBasedNarrativeModel(object):
 
         Logger.info("Please wait while we start Creating Index...")
         
-        # temperary
-        ##########################################
-        df = pd.read_csv("services/weekly_geo_state.csv")
-        df['week_start_date'] = df['week_start_date'].apply(DateUtils.format_str_to_date)
-        self.database = df
-        ##########################################
-
         # index all the metrics
         self.metric_index = FuzzySet()
         for dict_ in self.domain_config['metrics']:
             output = set([dict_['primary_metric_name']] + dict_['synonyms'])
             for m in output:
                 self.metric_index.add(m.lower())
+
+        # index all the dimensions
+        cols = ','.join(self.db_schema['col_dimensions'])
+        table_name = self.db_schema['table_name']
+        query = "SELECT DISTINCT {} FROM {}".format(cols, table_name)
+        df_distinct = self.db_conn.execute_sql(query)
+        
+        self.region_index = FuzzySet()
+        self.country_index = FuzzySet()
+        self.campaign_index = FuzzySet()
+        self.mobile_device_type_index = FuzzySet()
+        self.product_series_index = FuzzySet()
+        self.product_subseries_index = FuzzySet()
+       
+        for tup in df_distinct.values:
+            self.region_index.add(tup[0].lower())
+            self.country_index.add(tup[1].lower())
+            self.campaign_index.add(tup[2].lower())
+            self.mobile_device_type_index.add(tup[3].lower())
+            self.product_series_index.add(tup[4].lower())
+            self.product_subseries_index.add(tup[5].lower())
 
         # create a synomys to metric mapping
         synonym2metric = {}
@@ -90,8 +104,9 @@ class RuleBasedNarrativeModel(object):
         
         Logger.info("Sucessfully Created Index!")
 
-    def validate_metric(self,
+    def validate_metric_dimension(self,
                         metric_name,
+                        dimensions,
                         threshold=0.5):
         
         is_validated = True
@@ -102,16 +117,68 @@ class RuleBasedNarrativeModel(object):
         else:
             metric_name = None
         
-        metric_mapping = None
+        entity_mapping = {}
+
         if metric_name is not None:
-            metric_mapping = {
+            metric = {
                 "name": metric_name,
                 "col_name": self.synonym2metric[metric_name]
+            }
+
+            if dimensions is not None:
+                # if we have proper metric then look for dimensions
+                for dict_ in dimensions:
+                    col_name = dict_["col_name"]
+                    value = dict_["value"]
+                    
+                    if col_name == "region":
+                        confidence, value = self.region_index.get(value)[0]
+                        if confidence >= threshold:
+                            dict_['value'] = value
+                        else:
+                            dict_['value'] = None
+                    elif col_name == "country":
+                        confidence, value = self.country_index.get(value)[0]
+                        if confidence >= threshold:
+                            dict_['value'] = value
+                        else:
+                            dict_['value'] = None
+                    elif col_name == "campaign":
+                        confidence, value = self.campaign_index.get(value)[0]
+                        if confidence >= threshold:
+                            dict_['value'] = value
+                        else:
+                            dict_['value'] = None
+                    elif col_name == "mobile_device_type":
+                        confidence, value = self.mobile_device_type_index.get(value)[0]
+                        if confidence >= threshold:
+                            dict_['value'] = value
+                        else:
+                            dict_['value'] = None
+                    elif col_name == "product_series":
+                        confidence, value = self.product_series_index.get(value)[0]
+                        if confidence >= threshold:
+                            dict_['value'] = value
+                        else:
+                            dict_['value'] = None
+                    elif col_name == "product_subseries":
+                        confidence, value = self.product_subseries_index.get(value)[0]
+                        if confidence >= threshold:
+                            dict_['value'] = value
+                        else:
+                            dict_['value'] = None
+
+                # remove the entity whose value is None (i.e not present in index)
+                dimensions = [dict_ for dict_ in dimensions if dict_['value'] is not None]
+                
+            entity_mapping = {
+                "metric": metric,
+                "dimensions": dimensions
             }
         else:
             is_validated = False
 
-        return is_validated, metric_mapping
+        return is_validated, entity_mapping
 
     def get_bm_narrative_template(
             self, metric_name):
@@ -166,62 +233,80 @@ class RuleBasedNarrativeModel(object):
 
 
     def get_data_from_db(self,
-                metric_mapping,
+                entity_mapping,
                 timeline,
                 limit=-1):
         
-        primary_metric_col_name = metric_mapping['col_name']
-        primary_metric_name = metric_mapping['name']
+        metric_col_name = entity_mapping['metric']['col_name']
+        metric_name = entity_mapping['metric']['name']
         # fill spaces in the name
-        if len(primary_metric_name.split()) > 1: 
-            primary_metric_name= '_'.join(
-                primary_metric_name.split())
+        if len(metric_name.split()) > 1: 
+            metric_name= '_'.join(metric_name.split())
         
-        all_kpi = self.metric2kpi[primary_metric_col_name]
-        
-        # name of the table
-        #table_name = self.db_schema['table_name']
-        # all the metrics column names
+        # time_period column
+        time_series_col_name = self.db_schema['col_timeseries'][0]
+        # col metrics
         col_metrics = self.db_schema['col_metrics']
-        #col_metrics = ["'{}'".format(metric) for metric in col_metrics]
 
+        # comparable kpis
+        metric_kpi = self.metric2kpi[metric_col_name]
+        # all the column names
+        all_cols = [time_series_col_name, metric_col_name] + \
+            [dict_['col_name'] for dict_ in metric_kpi if dict_['col_name'] in col_metrics]
+        all_cols = ', '.join(all_cols)
+
+        # range
+        week_start_date_from = timeline[0]
+        week_start_date_to = timeline[-1]
+            
+        # define a list of all conditions
+        all_conditions = [
+            "({}>='{}' AND {}<'{}')".format(
+                time_series_col_name, week_start_date_from , 
+                time_series_col_name, week_start_date_to)]
+                
+        dimensions = []
+        if entity_mapping['dimensions'] is not None:
+            dim2val = {}
+            for dict_ in entity_mapping['dimensions']:
+                col_name = dict_['col_name']
+                value = dict_['value']
+                dimensions.append(col_name)
+
+                if col_name not in dim2val:
+                    dim2val[col_name] = [value]
+                else:
+                    dim2val[col_name].append(value)
+            
+            for dim, val in dim2val.items():
+                # for a dimension with multiple values add OR condition
+                condition = ' OR '.join(["{}='{}'".format(dim, v) for v in val])
+                condition = '(' + condition + ')'
+                all_conditions.append(condition)
+                
+        all_conditions = ' AND '.join(all_conditions)
+        
+        # execute the SQL query based on cols and conditions
+        table_name = self.db_schema['table_name']
+        query = None
+        if limit > 0:
+            query = "SELECT {} FROM {} WHERE {} LIMIT {}".format(
+                all_cols, table_name, all_conditions, limit)
+        else:
+            query = "SELECT {} FROM {} WHERE {}".format(
+                all_cols, table_name, all_conditions)
+        
+        Logger.info("Run SQL query= {}".format(query))
+        df_sql_output = self.db_conn.execute_sql(query)
        
-        # # define a list of all conditions
-        # all_conditions = [
-        #     "(week_start_date>='{}' AND week_start_date<'{}')".format(
-        #         refresh_start_date, refresh_end_date)]
-        # all_conditions = ' AND '.join(all_conditions)
-        
-        # all_cols = ','.join(
-        #     list(set(col_metrics + ['week_start_date'])))
-    
-        # # execute the SQL query based on cols and conditions
-        # table_name = self.db_schema['table_name']
-        # query = None
-        # if limit > 0:
-        #     query = "SELECT {} FROM {} WHERE {} LIMIT {}".format(
-        #         all_cols, table_name, all_conditions, limit)
-        # else:
-        #     query = "SELECT {} FROM {} WHERE {}".format(
-        #         all_cols, table_name, all_conditions)
-        
-        # Logger.info("Run SQL query= {}".format(query))
-        # df_sql_output = self.db_conn.execute_sql(query)
-        # print(df_sql_output)
-
-        df_sql_output = self.database[
-            (self.database['week_start_date']>=timeline[0]) &
-            (self.database['week_start_date']<timeline[-1])]
-
         data_timeline = []
         size = len(timeline) - 1
         for _iter in range(size):
             start_date = timeline[_iter]
             end_date = timeline[_iter + 1]
-            df_sub = df_sql_output[(df_sql_output['week_start_date']>=start_date)
-                        & (df_sql_output['week_start_date']<end_date)]
+            df_sub = df_sql_output[(df_sql_output[time_series_col_name]>=start_date)
+                        & (df_sql_output[time_series_col_name]<end_date)]
             
-            df_sub = df_sub[col_metrics]
             dict_ = dict(df_sub.mean(axis = 0))
             for key, value in dict_.items():
                 if key == "revenue":
@@ -230,21 +315,21 @@ class RuleBasedNarrativeModel(object):
                     dict_[key] = int(value)
         
             # check if primary_metric is in dict_ or not
-            if primary_metric_col_name not in dict_:
+            if metric_col_name not in dict_:
                 value = MetricUtils.calculate_extra_metric(
-                    primary_metric_col_name, dict_)
-                dict_[primary_metric_col_name] = value
-            dict_[primary_metric_name] = dict_[primary_metric_col_name]
+                    metric_col_name, dict_)
+                dict_[metric_col_name] = value
+            dict_[metric_name] = dict_[metric_col_name]
 
             # add all the kpi
-            for kpi in all_kpi:
+            for kpi in metric_kpi:
                 col_name = kpi['col_name']
                 if col_name not in dict_:
                     value = MetricUtils.calculate_extra_metric(
                         col_name, dict_)
                     dict_[col_name] = value
 
-            dict_['week_start_date'] = DateUtils.format_date_to_str(
+            dict_[time_series_col_name] = DateUtils.format_date_to_str(
                 start_date)
             data_timeline.append(dict_)
         
@@ -253,54 +338,64 @@ class RuleBasedNarrativeModel(object):
         return data_timeline
     
 
-    def predict_anomaly_narratives(self, data, pmetric_mapping, **kwargs):
-        
+    def predict_anomaly_narratives(self, data, entity_mapping, **kwargs):
+
         # create the anomaly object
         anomaly_detector = AnomalyDetector(data)
-      
-        kpi_metrics = self.metric2kpi[pmetric_mapping['col_name']]
-        all_metrics = [pmetric_mapping] + kpi_metrics
+        past_n = kwargs.get('past_n', 8)
+
+        time_series_col_name = self.db_schema['col_timeseries'][0]
+        metric_col_name = entity_mapping['metric']['col_name']
+
+        # comparable kpis
+        metric_kpi = self.metric2kpi[metric_col_name]
+        all_metrics = [entity_mapping['metric']] + metric_kpi
  
         output = {}
-        for metric_mapping in all_metrics:
+        for metric_ in all_metrics:
+
+            metric_col_name = metric_['col_name']
+            metric_name = metric_['name']
+
             # for metric find anomly and template
             predictions = anomaly_detector.detect_anomaly(
-                metric_mapping['col_name'])
-            # # find the best template
+                metric_col_name, time_series_col_name, past_n)
+            # find the best template
             bm_id, bm_template = self.get_bm_narrative_template(
-                metric_mapping['col_name'])
+                metric_col_name)
         
             for dict_ in predictions:
                 narrative = ""
                 if dict_['is_anomaly'] == True:
                     narrative = NarrativeTemplate.get_narative_by_template(
-                                    bm_id, dict_, metric_mapping['name'], 
+                                    bm_id, dict_, metric_name, 
+                                    time_series_col_name,
                                     bm_template)
                 dict_['narrative'] = narrative
              
-            # # we have updated predictions for metric containing narrative
-            output[metric_mapping['col_name']] = predictions
+            # we have updated predictions for metric containing narrative
+            output[metric_col_name] = predictions
         
         return output
 
 
     def prepare_response_payload(self,
-                output, pmetric_mapping, is_validated=True):
+                output, entity_mapping, is_validated=True):
         
         if is_validated:
            
-            primary_metric_name = pmetric_mapping['name']
-            primary_metric_col_name = pmetric_mapping['col_name']
+            metric_col_name = entity_mapping['metric']['col_name']
+            metric_name = entity_mapping['metric']['name']
             
-            compare_metrics = self.metric2kpi[primary_metric_col_name]
+            compare_metrics = self.metric2kpi[metric_col_name]
             graph = self.graph
            
             response = {
                 "code": 200,
-                "anomaly": output ,
+                "anomaly": output,
                 "metric": {
-                    "name": primary_metric_name.title(),
-                    "col_name": primary_metric_col_name
+                    "name": metric_name.title(),
+                    "col_name": metric_col_name
                 },
                 "compare_metrics": compare_metrics,
                 "graph": graph
@@ -361,25 +456,26 @@ class NarrativeTemplate(object):
         return above_below
     
     @staticmethod
-    def get_narative_by_template(id, prediction, metric_name, template):
+    def get_narative_by_template(id, prediction, metric_col_name, 
+                      time_series_col_name, template):
         """ 
             id = (int) Id of the Narrative Template
             prediction = weekly prediction
             metric_name = name of metric
         """
-        start_date = prediction['week_start_date']
+        start_date = prediction[time_series_col_name]
         metric_val =  prediction['value']
-        avg_bound = prediction['avg_bound']
+        sma_bound = prediction['sma_bound']
 
         metric_spike_drop, val_spike_drop = NarrativeTemplate.helper_spike_drop(
-            metric_val, avg_bound)
+            metric_val, sma_bound)
         metric_above_below = NarrativeTemplate.helper_above_below(
-            metric_val, avg_bound)
+            metric_val, sma_bound)
       
         dict_placeholder = {
             "start_date": start_date,
             "metric_val": metric_val,
-            "metric_name": metric_name,
+            "metric_name": metric_col_name,
             "metric_spike_drop": metric_spike_drop,
             "metric_above_below": metric_above_below,
             'val_spike_drop': val_spike_drop,

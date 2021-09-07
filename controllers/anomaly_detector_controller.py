@@ -23,19 +23,21 @@ class AnomalyDetectorController(object):
         metric_name = req_payload["metric_name"]
         # predicted time_period by NLU
         time_period = req_payload["time_period"]
+        # predicted dimension by NLU
+        dimensions = req_payload.get("dimensions", None)
 
         data_timeline = []
-        pmetric_mapping = None
+        entity_mapping = None
 
         Logger.info("\n")
         Logger.info("*"*100)
 
         # first validate the entities
-        is_validated, pmetric_mapping = AnomalyDetectorController.model.validate_metric(
-            metric_name)
+        is_validated, entity_mapping = AnomalyDetectorController.model.validate_metric_dimension(
+            metric_name, dimensions)
         
         Logger.info("is_validated= {}".format(is_validated))
-        Logger.info("Primary Metric Mapping= {}".format(pmetric_mapping))
+        Logger.info("Primary Metric Mapping= {}".format(entity_mapping))
         Logger.info("*"*100)
         
         # if is validated flag is true then we are sure to get back results
@@ -44,17 +46,17 @@ class AnomalyDetectorController(object):
             timeline = AnomalyDetectorController.model.get_timeline(time_period)
             # get the data based on SQL query
             data_timeline = AnomalyDetectorController.model.get_data_from_db(
-                                     metric_mapping=pmetric_mapping,
+                                     entity_mapping=entity_mapping,
                                      timeline=timeline,
                                      limit=-1)
             output = AnomalyDetectorController.model.predict_anomaly_narratives(
-                data_timeline, pmetric_mapping)
+                data_timeline, entity_mapping)
 
             Logger.info("*"*50)
   
         response =  AnomalyDetectorController.model.prepare_response_payload(
                              output,
-                             pmetric_mapping,
+                             entity_mapping,
                              is_validated)
         
         # # add a key as result 

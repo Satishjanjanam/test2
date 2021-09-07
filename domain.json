@@ -1,5 +1,8 @@
 {
-    
+    "dimensions": [
+        "region", "country", "mobile device type",
+        "campaign", "product series", "product subseries"
+    ],
     "metrics": [
         {
             "primary_metric_name": "visits",
@@ -160,11 +163,38 @@
     },
 
     "db_schema": {
-        "table_name": "adobe_geostate",
-        "col_dimensions": ["country", "city"],
+        "table_name": "adobe_ecommerce",
+        "col_dimensions": [
+            "region", "country", "mobile_device_type",
+            "campaign", "product_series", 
+            "product_subseries"
+          ],
         "col_metrics": [
-            "unique_visitors", "visits", "orders", "units", "revenue", "aov",
-            "upt", "click_throughs"
+            "unique_visitors",
+            "visits",
+            "page_views",
+            "carts",
+            "cart_additions",
+            "checkouts",
+            "orders",
+            "units",
+            "revenue",
+            "aov",
+            "cart_open_to_checkout_initiation",
+            "checkout_initiation_to_orders",
+            "upt",
+            "visit_depth",
+            "avg_session_duration",
+            "abandoned",
+            "abandonment_rate",
+            "buyer_conversion",
+            "abandoned_revenue",
+            "page_views_per_visitor",
+            "click_throughs",
+            "internal_searches",
+            "shop_visits",
+            "visit_duration",
+            "refreshed_date"
         ],
         "col_timeseries": ["week_start_date"]
     }

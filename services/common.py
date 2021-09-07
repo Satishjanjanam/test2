@@ -34,8 +34,9 @@ class DateUtils(object):
             past_date = last_week - timedelta(weeks=i+1)
             nweeks.append(past_date)
         
+        nweeks = [week.date() for week in nweeks]
         nweeks.reverse()
-
+       
         return nweeks
 
     @staticmethod

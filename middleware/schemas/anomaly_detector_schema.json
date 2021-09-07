@@ -12,6 +12,9 @@
         },
         "time_period": {
             "type": "object"
+        },
+        "dimensions": {
+            "type": "array"
         }
     }
 }

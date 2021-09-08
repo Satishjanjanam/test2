@@ -8,8 +8,8 @@ RUN pip install --upgrade pip
 
 RUN pip install -r requirements.txt
 
-EXPOSE 5000
-ENV PORT 5000
+EXPOSE 5002
+ENV PORT 5002
 
-ENTRYPOINT [ "python", "main.py", "--prod=True" ]
+ENTRYPOINT [ "python", "main.py"]
 

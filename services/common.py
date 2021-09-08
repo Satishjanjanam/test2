@@ -21,7 +21,7 @@ class DateUtils(object):
         return date
     
     @staticmethod
-    def get_nlast_weeks(last_week, to_, past_n=24):
+    def get_nlast_weeks(last_week, to_, past_n=12):
 
         last_week = datetime.strptime(last_week, '%Y-%m-%d')
         end_date = to_
@@ -33,14 +33,14 @@ class DateUtils(object):
         for i in range(past_n-1):
             past_date = last_week - timedelta(weeks=i+1)
             nweeks.append(past_date)
-        
+
         nweeks = [week.date() for week in nweeks]
         nweeks.reverse()
-       
+
         return nweeks
 
     @staticmethod
-    def get_nlast_days(last_day, to_, past_n=24):
+    def get_nlast_days(last_day, to_, past_n=12):
 
         last_day = datetime.strptime(last_day, '%Y-%m-%d')
         end_date = to_
@@ -51,13 +51,14 @@ class DateUtils(object):
         for i in range(past_n-1):
             past_date = last_day - timedelta(days=i+1)
             ndays.append(past_date)
-        
+
+        ndays = [day.date() for day in ndays]
         ndays.reverse()
 
         return ndays
     
     @staticmethod
-    def get_nlast_months(last_month, to_, past_n=12):
+    def get_nlast_months(last_month, to_, past_n=6):
 
         last_month = datetime.strptime(last_month, '%Y-%m-%d')
         end_date = to_
@@ -70,12 +71,13 @@ class DateUtils(object):
             past_date = last_month - relativedelta(months=i+1)
             nmonths.append(past_date)
         
+        nmonths = [month.date() for month in nmonths]
         nmonths.reverse()
 
         return nmonths
     
     @staticmethod
-    def get_nlast_years(last_year, to_, past_n=12):
+    def get_nlast_years(last_year, to_, past_n=6):
 
         last_year = datetime.strptime(last_year, '%Y-%m-%d')
         end_date = to_
@@ -88,12 +90,13 @@ class DateUtils(object):
             past_date = last_year - relativedelta(years=i+1)
             nyears.append(past_date)
         
+        nyears = [year.date() for year in nyears]
         nyears.reverse()
 
         return nyears
 
     @staticmethod
-    def get_nlast_quarters(last_quarter, to_, past_n=12):
+    def get_nlast_quarters(last_quarter, to_, past_n=6):
 
         last_quarter = datetime.strptime(last_quarter, '%Y-%m-%d')
         end_date = to_
@@ -106,6 +109,7 @@ class DateUtils(object):
             past_date = last_quarter - relativedelta(months=(i+1) * 3)
             nquarters.append(past_date)
         
+        nquarters = [quarter.date() for quarter in nquarters]
         nquarters.reverse()
 
         return nquarters
@@ -155,17 +159,6 @@ class MetricUtils(object):
     def get_transaction_metric(orders):
 
         return orders
-
-    @staticmethod
-    def get_ctr_metric(clicks_to_page, unique_visitors):
-        ctr = []
-        for clic, uniq in zip(clicks_to_page, unique_visitors):
-            if int(uniq) == 0:
-                ctr.append(0)
-            else:
-                ctr.append(round((clic/uniq) * 100.0, 2))
-        
-        return ctr
 
     @staticmethod
     def get_cart_abandonment_rate_metric(cart_open,  checkouts):
@@ -225,10 +218,6 @@ class MetricUtils(object):
         elif metric_name == 'transaction':
             return MetricUtils.get_transaction_metric(
                 [dict_['orders']])[0]
-
-        elif metric_name == 'ctr':
-            return MetricUtils.get_ctr_metric(
-                [dict_['clicks_to_page']], [dict_['unique_visitors']])[0]
 
         elif metric_name == 'cart_abandonment_rate':
             return MetricUtils.get_cart_abandonment_rate_metric(

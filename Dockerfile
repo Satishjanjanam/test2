@@ -11,5 +11,5 @@ RUN pip install -r requirements.txt
 EXPOSE 5002
 ENV PORT 5002
 
-ENTRYPOINT [ "python", "main.py"]
+ENTRYPOINT [ "python", "main.py", "--prod=True"]
 

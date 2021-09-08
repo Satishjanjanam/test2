@@ -2,7 +2,7 @@ import os
 import argparse
 import json
 
-parser = argparse.ArgumentParser(description='Anomaly Detector API')
+parser = argparse.ArgumentParser(description='Discovery Anomaly Detection API')
 parser.add_argument('--prod', type=bool, default=False, help='Input the Runtime Environment')
 args = parser.parse_args()
 

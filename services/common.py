@@ -21,7 +21,7 @@ class DateUtils(object):
         return date
     
     @staticmethod
-    def get_nlast_weeks(last_week, to_, past_n=12):
+    def get_nlast_weeks(last_week, to_, past_n=24):
 
         last_week = datetime.strptime(last_week, '%Y-%m-%d')
         end_date = to_
@@ -40,7 +40,7 @@ class DateUtils(object):
         return nweeks
 
     @staticmethod
-    def get_nlast_days(last_day, to_, past_n=12):
+    def get_nlast_days(last_day, to_, past_n=24):
 
         last_day = datetime.strptime(last_day, '%Y-%m-%d')
         end_date = to_
@@ -58,7 +58,7 @@ class DateUtils(object):
         return ndays
     
     @staticmethod
-    def get_nlast_months(last_month, to_, past_n=6):
+    def get_nlast_months(last_month, to_, past_n=12):
 
         last_month = datetime.strptime(last_month, '%Y-%m-%d')
         end_date = to_
@@ -77,7 +77,7 @@ class DateUtils(object):
         return nmonths
     
     @staticmethod
-    def get_nlast_years(last_year, to_, past_n=6):
+    def get_nlast_years(last_year, to_, past_n=12):
 
         last_year = datetime.strptime(last_year, '%Y-%m-%d')
         end_date = to_
@@ -96,7 +96,7 @@ class DateUtils(object):
         return nyears
 
     @staticmethod
-    def get_nlast_quarters(last_quarter, to_, past_n=6):
+    def get_nlast_quarters(last_quarter, to_, past_n=12):
 
         last_quarter = datetime.strptime(last_quarter, '%Y-%m-%d')
         end_date = to_

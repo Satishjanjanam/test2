@@ -165,8 +165,8 @@
     "db_schema": {
         "table_name": "adobe_ecommerce",
         "col_dimensions": [
-            "region", "country", "mobile_device_type",
-            "campaign", "product_series", 
+            "region", "country","campaign", 
+            "mobile_device_type", "product_series", 
             "product_subseries"
           ],
         "col_metrics": [
@@ -193,8 +193,7 @@
             "click_throughs",
             "internal_searches",
             "shop_visits",
-            "visit_duration",
-            "refreshed_date"
+            "visit_duration"
         ],
         "col_timeseries": ["week_start_date"]
     }

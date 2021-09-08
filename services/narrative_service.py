@@ -59,6 +59,7 @@ class RuleBasedNarrativeModel(object):
         query = "SELECT DISTINCT {} FROM {}".format(cols, table_name)
         df_distinct = self.db_conn.execute_sql(query)
         
+        
         self.region_index = FuzzySet()
         self.country_index = FuzzySet()
         self.campaign_index = FuzzySet()
@@ -299,6 +300,7 @@ class RuleBasedNarrativeModel(object):
         Logger.info("Run SQL query= {}".format(query))
         df_sql_output = self.db_conn.execute_sql(query)
        
+       
         data_timeline = []
         size = len(timeline) - 1
         for _iter in range(size):
@@ -306,8 +308,11 @@ class RuleBasedNarrativeModel(object):
             end_date = timeline[_iter + 1]
             df_sub = df_sql_output[(df_sql_output[time_series_col_name]>=start_date)
                         & (df_sql_output[time_series_col_name]<end_date)]
-            
-            dict_ = dict(df_sub.mean(axis = 0))
+            dict_ = dict()
+            if len(df_sub) > 0:
+                dict_ = dict(df_sub.mean(axis = 0))
+            else:
+                dict_ = dict(df_sub.sum(axis = 0))
             for key, value in dict_.items():
                 if key == "revenue":
                     dict_[key] = round(value,2)
@@ -333,8 +338,10 @@ class RuleBasedNarrativeModel(object):
                 start_date)
             data_timeline.append(dict_)
         
-        data_timeline = pd.DataFrame.from_records(data_timeline)
-        
+        if len(data_timeline) > 0:
+            data_timeline = pd.DataFrame.from_records(data_timeline)
+       
+     
         return data_timeline
     
 

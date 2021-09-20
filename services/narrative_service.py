@@ -509,7 +509,7 @@ class NarrativeTemplate(object):
         dict_placeholder = {
             "start_date": start_date,
             "metric_val": metric_val,
-            "metric_name": metric_col_name,
+            "metric_name": metric_col_name.title(),
             "metric_spike_drop": metric_spike_drop,
             "metric_above_below": metric_above_below,
             'val_spike_drop': val_spike_drop,

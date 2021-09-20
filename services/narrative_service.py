@@ -77,21 +77,9 @@ class RuleBasedNarrativeModel(object):
 
         # create a synomys to metric mapping
         synonym2metric = {}
-        # create metric to compare_metrics mapping
-        metric2kpi = {}
-
+        
         for dict_ in self.domain_config['metrics']:
             primary_metric_name = dict_['primary_metric_name']
-            # handle kpi
-            secondary_metrics = dict_['secondary_metric_name']
-            compare_metrics = dict_['compare_metrics']
-            kpi = []
-            for col_name, name in zip(secondary_metrics, compare_metrics):
-                kpi.append({
-                    'name': name,
-                    'col_name':col_name
-                })
-            metric2kpi[primary_metric_name] = kpi
             # handle synomys
             synonyms = dict_['synonyms']
             synonym2metric[primary_metric_name] = primary_metric_name
@@ -99,7 +87,6 @@ class RuleBasedNarrativeModel(object):
                 synonym2metric[syn] = primary_metric_name
         
         self.synonym2metric = synonym2metric
-        self.metric2kpi = metric2kpi
 
         self.graph = self.domain_config['graph']
         
@@ -246,15 +233,9 @@ class RuleBasedNarrativeModel(object):
         
         # time_period column
         time_series_col_name = self.db_schema['col_timeseries'][0]
-        # col metrics
-        col_metrics = self.db_schema['col_metrics']
-
-        # comparable kpis
-        metric_kpi = self.metric2kpi[metric_col_name]
+    
         # all the column names
-        all_cols = [time_series_col_name, metric_col_name] + \
-            [dict_['col_name'] for dict_ in metric_kpi if dict_['col_name'] in col_metrics]
-        all_cols = ', '.join(all_cols)
+        all_cols = ', '.join([time_series_col_name, metric_col_name])
 
         # range
         week_start_date_from = timeline[0]
@@ -326,14 +307,6 @@ class RuleBasedNarrativeModel(object):
                 dict_[metric_col_name] = value
             dict_[metric_name] = dict_[metric_col_name]
 
-            # add all the kpi
-            for kpi in metric_kpi:
-                col_name = kpi['col_name']
-                if col_name not in dict_:
-                    value = MetricUtils.calculate_extra_metric(
-                        col_name, dict_)
-                    dict_[col_name] = value
-
             dict_[time_series_col_name] = DateUtils.format_date_to_str(
                 start_date)
             data_timeline.append(dict_)
@@ -353,38 +326,26 @@ class RuleBasedNarrativeModel(object):
 
         time_series_col_name = self.db_schema['col_timeseries'][0]
         metric_col_name = entity_mapping['metric']['col_name']
+        metric_name = entity_mapping['metric']['name']
 
-        # comparable kpis
-        metric_kpi = self.metric2kpi[metric_col_name]
-        all_metrics = [entity_mapping['metric']] + metric_kpi
- 
-        output = {}
-        for metric_ in all_metrics:
-
-            metric_col_name = metric_['col_name']
-            metric_name = metric_['name']
-
-            # for metric find anomly and template
-            predictions = anomaly_detector.detect_anomaly(
-                metric_col_name, time_series_col_name, past_n)
-            # find the best template
-            bm_id, bm_template = self.get_bm_narrative_template(
-                metric_col_name)
-        
-            for dict_ in predictions:
-                narrative, narrative_html = "", ""
-                if dict_['is_anomaly'] == True:
-                    narrative, narrative_html = NarrativeTemplate.get_narative_by_template(
-                                    bm_id, dict_, metric_name, 
-                                    time_series_col_name,
-                                    bm_template)
-                dict_['narrative'] = narrative
-                dict_['narrative_html'] = narrative_html
-             
-            # we have updated predictions for metric containing narrative
-            output[metric_col_name] = predictions
-        
-        return output
+        # for metric find anomly and template
+        predictions = anomaly_detector.detect_anomaly(
+            metric_col_name, time_series_col_name, past_n)
+        # find the best template
+        bm_id, bm_template = self.get_bm_narrative_template(
+            metric_col_name)
+    
+        for dict_ in predictions:
+            narrative, narrative_html = "", ""
+            if dict_['is_anomaly'] == True:
+                narrative, narrative_html = NarrativeTemplate.get_narative_by_template(
+                                bm_id, dict_, metric_name, 
+                                time_series_col_name,
+                                bm_template)
+            dict_['narrative'] = narrative
+            dict_['narrative_html'] = narrative_html
+            
+        return predictions
 
 
     def prepare_response_payload(self,
@@ -394,8 +355,6 @@ class RuleBasedNarrativeModel(object):
            
             metric_col_name = entity_mapping['metric']['col_name']
             metric_name = entity_mapping['metric']['name']
-            
-            compare_metrics = self.metric2kpi[metric_col_name]
             graph = self.graph
            
             response = {
@@ -405,7 +364,6 @@ class RuleBasedNarrativeModel(object):
                     "name": metric_name.title(),
                     "col_name": metric_col_name
                 },
-                "compare_metrics": compare_metrics,
                 "graph": graph
             }
             
@@ -415,7 +373,6 @@ class RuleBasedNarrativeModel(object):
                 "code": 428,
                 "anomaly": [],
                 "metric": None,
-                "compare_metrics": None,
                 "graph": None,
             }
             
@@ -423,7 +380,7 @@ class RuleBasedNarrativeModel(object):
 
 
 class NarrativeTemplate(object):
-
+   
     @staticmethod
     def convert_placeholders_to_html(dict_placeholder):
         
@@ -444,7 +401,7 @@ class NarrativeTemplate(object):
                     value_html = "<b style='color:yellow;'>{}</b>".format(value)
             else:
                 if key != "metric_above_below":
-                    value_html = "<b>{}</b>".format(value)
+                    value_html = '<b>{}</b>'.format(value)
 
             dict_placeholder_html[key] = value_html
         
@@ -512,7 +469,7 @@ class NarrativeTemplate(object):
             "metric_name": metric_col_name,
             "metric_spike_drop": metric_spike_drop,
             "metric_above_below": metric_above_below,
-            'val_spike_drop': val_spike_drop,
+            "val_spike_drop": val_spike_drop,
         }
         # clean the placeholder
         dict_placeholder = NarrativeTemplate.clean_placeholder(
@@ -525,5 +482,6 @@ class NarrativeTemplate(object):
                     **dict_placeholder)
         narrative_html = template.safe_substitute(
                     **dict_placeholder_html)
+        
         
         return narrative, narrative_html

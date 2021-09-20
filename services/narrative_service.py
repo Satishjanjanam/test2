@@ -372,13 +372,14 @@ class RuleBasedNarrativeModel(object):
                 metric_col_name)
         
             for dict_ in predictions:
-                narrative = ""
+                narrative, narrative_html = "", ""
                 if dict_['is_anomaly'] == True:
-                    narrative = NarrativeTemplate.get_narative_by_template(
+                    narrative, narrative_html = NarrativeTemplate.get_narative_by_template(
                                     bm_id, dict_, metric_name, 
                                     time_series_col_name,
                                     bm_template)
                 dict_['narrative'] = narrative
+                dict_['narrative_html'] = narrative_html
              
             # we have updated predictions for metric containing narrative
             output[metric_col_name] = predictions
@@ -422,6 +423,32 @@ class RuleBasedNarrativeModel(object):
 
 
 class NarrativeTemplate(object):
+
+    @staticmethod
+    def convert_placeholders_to_html(dict_placeholder):
+        
+        dict_placeholder_html = {}
+        for key, value in dict_placeholder.items():
+
+            value_html = value
+
+            if key in ["val_spike_drop"]:
+                if value > 0:
+                    # make it green
+                    value_html = "<b style='color:green;'>{}</b>".format(value)
+                elif value < 0:
+                    # make it red
+                    value_html = "<b style='color:red;'>{}</b>".format(value)
+                else:
+                    # make it yello
+                    value_html = "<b style='color:yellow;'>{}</b>".format(value)
+            else:
+                if key != "metric_above_below":
+                    value_html = "<b>{}</b>".format(value)
+
+            dict_placeholder_html[key] = value_html
+        
+        return dict_placeholder_html
     
     @staticmethod
     def clean_placeholder(dict_placeholder):
@@ -490,9 +517,13 @@ class NarrativeTemplate(object):
         # clean the placeholder
         dict_placeholder = NarrativeTemplate.clean_placeholder(
             dict_placeholder)
+        dict_placeholder_html = NarrativeTemplate.convert_placeholders_to_html(
+            dict_placeholder)
         
         template = Template(template)
         narrative = template.safe_substitute(
                     **dict_placeholder)
+        narrative_html = template.safe_substitute(
+                    **dict_placeholder_html)
         
-        return narrative
+        return narrative, narrative_html

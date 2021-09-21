@@ -248,11 +248,10 @@ class RuleBasedNarrativeModel(object):
         time_series_col_name = self.db_schema['col_timeseries'][0]
         # col metrics
         col_metrics = self.db_schema['col_metrics']
-
         # comparable kpis
-        metric_kpi = self.metric2kpi[metric_col_name]
+        metric_kpi = self.metric2kpi[metric_col_name] + [entity_mapping['metric']]
         # all the column names
-        all_cols = [time_series_col_name, metric_col_name] + \
+        all_cols = [time_series_col_name] + \
             [dict_['col_name'] for dict_ in metric_kpi if dict_['col_name'] in col_metrics]
         all_cols = ', '.join(all_cols)
 

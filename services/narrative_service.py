@@ -437,10 +437,10 @@ class NarrativeTemplate(object):
                     value_html = "<span style='color:green;font-weight:bold;'>{}</span>".format(value)
                 elif value < 0:
                     # make it red
-                    value_html = "<span style='color:green;font-weight:bold;'>{}</span>".format(value)
+                    value_html = "<span style='color:red;font-weight:bold;'>{}</span>".format(value)
                 else:
-                    # make it yello
-                    value_html = "<span style='color:green;font-weight:bold;'>{}</span>".format(value)
+                    # make it yellow
+                    value_html = "<span style='color:yellow;font-weight:bold;'>{}</span>".format(value)
             else:
                 if key != "metric_above_below":
                     value_html = "<span style='font-weight:bold;'>{}</span>".format(value)

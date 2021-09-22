@@ -434,16 +434,16 @@ class NarrativeTemplate(object):
             if key in ["val_spike_drop"]:
                 if value > 0:
                     # make it green
-                    value_html = "<b style='color:green;'>{}</b>".format(value)
+                    value_html = "<span style='color:green;font-weight:bold;'>{}</span>".format(value)
                 elif value < 0:
                     # make it red
-                    value_html = "<b style='color:red;'>{}</b>".format(value)
+                    value_html = "<span style='color:green;font-weight:bold;'>{}</span>".format(value)
                 else:
                     # make it yello
-                    value_html = "<b style='color:yellow;'>{}</b>".format(value)
+                    value_html = "<span style='color:green;font-weight:bold;'>{}</span>".format(value)
             else:
                 if key != "metric_above_below":
-                    value_html = "<b>{}</b>".format(value)
+                    value_html = "<span style='font-weight:bold;'>{}</span>".format(value)
 
             dict_placeholder_html[key] = value_html
         
@@ -526,3 +526,5 @@ class NarrativeTemplate(object):
                     **dict_placeholder_html)
         
         return narrative, narrative_html
+    
+    

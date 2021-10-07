@@ -60,20 +60,26 @@ class RuleBasedNarrativeModel(object):
         df_distinct = self.db_conn.execute_sql(query)
         
         
+        self.campaign_index = FuzzySet()
         self.region_index = FuzzySet()
         self.country_index = FuzzySet()
-        self.campaign_index = FuzzySet()
+        self.city_index = FuzzySet()
+        self.product_index = FuzzySet()
+        self.browser_index = FuzzySet()
         self.mobile_device_type_index = FuzzySet()
-        self.product_series_index = FuzzySet()
-        self.product_subseries_index = FuzzySet()
-       
+        self.referring_domain_index = FuzzySet()
+        self.new_repeat_visitor_index = FuzzySet()
+
         for tup in df_distinct.values:
-            self.region_index.add(tup[0].lower())
-            self.country_index.add(tup[1].lower())
-            self.campaign_index.add(tup[2].lower())
-            self.mobile_device_type_index.add(tup[3].lower())
-            self.product_series_index.add(tup[4].lower())
-            self.product_subseries_index.add(tup[5].lower())
+            self.campaign_index.add(tup[0].lower())
+            self.region_index.add(tup[1].lower())
+            self.country_index.add(tup[2].lower())
+            self.city_index.add(tup[3].lower())
+            self.product_index.add(tup[4].lower())
+            self.browser_index.add(tup[5].lower())
+            self.mobile_device_type_index.add(tup[6].lower())
+            self.referring_domain_index.add(tup[7].lower())
+            self.new_repeat_visitor_index.add(tup[8].lower())
 
         # create a synomys to metric mapping
         synonym2metric = {}
@@ -132,7 +138,13 @@ class RuleBasedNarrativeModel(object):
                     col_name = dict_["col_name"]
                     value = dict_["value"]
                     
-                    if col_name == "region":
+                    if col_name == "campaign":
+                        confidence, value = self.campaign_index.get(value)[0]
+                        if confidence >= threshold:
+                            dict_['value'] = value
+                        else:
+                            dict_['value'] = None
+                    elif col_name == "region":
                         confidence, value = self.region_index.get(value)[0]
                         if confidence >= threshold:
                             dict_['value'] = value
@@ -144,8 +156,20 @@ class RuleBasedNarrativeModel(object):
                             dict_['value'] = value
                         else:
                             dict_['value'] = None
-                    elif col_name == "campaign":
-                        confidence, value = self.campaign_index.get(value)[0]
+                    elif col_name == "city":
+                        confidence, value = self.city_index.get(value)[0]
+                        if confidence >= threshold:
+                            dict_['value'] = value
+                        else:
+                            dict_['value'] = None
+                    elif col_name == "product":
+                        confidence, value = self.product_index.get(value)[0]
+                        if confidence >= threshold:
+                            dict_['value'] = value
+                        else:
+                            dict_['value'] = None
+                    elif col_name == "browser":
+                        confidence, value = self.browser_index.get(value)[0]
                         if confidence >= threshold:
                             dict_['value'] = value
                         else:
@@ -156,19 +180,18 @@ class RuleBasedNarrativeModel(object):
                             dict_['value'] = value
                         else:
                             dict_['value'] = None
-                    elif col_name == "product_series":
-                        confidence, value = self.product_series_index.get(value)[0]
+                    elif col_name == "referring_domain":
+                        confidence, value = self.referring_domain_index.get(value)[0]
                         if confidence >= threshold:
                             dict_['value'] = value
                         else:
                             dict_['value'] = None
-                    elif col_name == "product_subseries":
-                        confidence, value = self.product_subseries_index.get(value)[0]
+                    elif col_name == "new_repeat_visitor":
+                        confidence, value = self.new_repeat_visitor_index.get(value)[0]
                         if confidence >= threshold:
                             dict_['value'] = value
                         else:
                             dict_['value'] = None
-
                 # remove the entity whose value is None (i.e not present in index)
                 dimensions = [dict_ for dict_ in dimensions if dict_['value'] is not None]
                 
@@ -249,11 +272,9 @@ class RuleBasedNarrativeModel(object):
         # col metrics
         col_metrics = self.db_schema['col_metrics']
         # comparable kpis
-        metric_kpi = self.metric2kpi[metric_col_name] + [entity_mapping['metric']]
-        # all the column names
-        all_cols = [time_series_col_name] + \
-            [dict_['col_name'] for dict_ in metric_kpi if dict_['col_name'] in col_metrics]
-        all_cols = ', '.join(all_cols)
+        metric_kpi = self.metric2kpi[metric_col_name]
+        # name of the table
+        table_name = self.db_schema['table_name']
 
         # range
         week_start_date_from = timeline[0]
@@ -286,6 +307,11 @@ class RuleBasedNarrativeModel(object):
                 
         all_conditions = ' AND '.join(all_conditions)
         
+        # all columns
+        all_cols = [time_series_col_name] + col_metrics + dimensions
+        all_cols = ', '.join(all_cols)
+        
+        
         # execute the SQL query based on cols and conditions
         table_name = self.db_schema['table_name']
         query = None
@@ -299,7 +325,6 @@ class RuleBasedNarrativeModel(object):
         Logger.info("Run SQL query= {}".format(query))
         df_sql_output = self.db_conn.execute_sql(query)
        
-       
         data_timeline = []
         size = len(timeline) - 1
         for _iter in range(size):
@@ -307,11 +332,9 @@ class RuleBasedNarrativeModel(object):
             end_date = timeline[_iter + 1]
             df_sub = df_sql_output[(df_sql_output[time_series_col_name]>=start_date)
                         & (df_sql_output[time_series_col_name]<end_date)]
-            dict_ = dict()
-            if len(df_sub) > 0:
-                dict_ = dict(df_sub.mean(axis = 0))
-            else:
-                dict_ = dict(df_sub.sum(axis = 0))
+            df_sub = df_sub[col_metrics]
+            
+            dict_ = dict(df_sub.sum(axis = 0))
             for key, value in dict_.items():
                 if key == "revenue":
                     dict_[key] = round(value,2)
@@ -339,7 +362,6 @@ class RuleBasedNarrativeModel(object):
         
         if len(data_timeline) > 0:
             data_timeline = pd.DataFrame.from_records(data_timeline)
-       
      
         return data_timeline
     

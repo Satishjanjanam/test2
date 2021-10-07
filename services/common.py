@@ -164,7 +164,7 @@ class MetricUtils(object):
     def get_cart_abandonment_rate_metric(cart_open,  checkouts):
         cart_abandonment_rate = []
         for cart, check in zip(cart_open, checkouts):
-            if int(cart) == 0:
+            if int(cart) == 0 or cart < check:
                 cart_abandonment_rate.append(0.0)
             else:
                 cart_abandonment_rate.append(
@@ -176,7 +176,7 @@ class MetricUtils(object):
     def get_cart_abandonment_metric(cart_open,  checkouts):
         cart_abandonment = []
         for cart, check in zip(cart_open, checkouts):
-            if int(cart) == 0:
+            if int(cart) == 0 or cart < check:
                 cart_abandonment.append(0)
             else:
                 cart_abandonment.append(

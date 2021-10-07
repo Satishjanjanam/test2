@@ -18,8 +18,8 @@ class AnomalyDetector(object):
         sma = time_series_data.rolling(window=10).mean().dropna()
         rstd = time_series_data.rolling(window=10).std().dropna()
         
-        upper_band = sma + 1 * rstd
-        lower_band = sma - 1 * rstd
+        upper_band = sma + 1.0 * rstd
+        lower_band = sma - 1.0 * rstd
         sma_band = sma
         
         upper_band = upper_band.rename(columns={metric_col_name: 'upper_bound'})

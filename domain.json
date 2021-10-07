@@ -1,7 +1,8 @@
 {
     "dimensions": [
-        "region", "country", "mobile device type",
-        "campaign", "product series", "product subseries"
+        "campaign", "region", "country", "city",
+        "product", "browser", "mobile_device_type", 
+        "referring_domain", "new_repeat_visitor"
     ],
     "metrics": [
         {
@@ -28,9 +29,9 @@
             "primary_metric_name": "revenue",
             "synonyms": ["sales", "gross revenue", "demand revenue", "total revenue", "total sales"],
             "secondary_metric_name": [
-                "visits", "unique_visitors", "orders", "conversion_rate", "aov", "upt"],
+                "visits", "unique_visitors", "orders", "conversion_rate", "aov", "upt", "cart_abandonment_rate"],
             "compare_metrics": [
-                "Visits", "Unique Visitors", "Orders", "Conversion Rate", "Average Order Value", "Units Per Transaction"]
+                "Visits", "Unique Visitors", "Orders", "Conversion Rate", "Average Order Value", "Units Per Transaction", "Cart Abandonment Rate"]
         },
 
         {
@@ -70,9 +71,9 @@
             "primary_metric_name": "orders",
             "synonyms": ["transactions", "transaction", "conversions", "conversion", "order"],
             "secondary_metric_name": [
-                "visits", "unique_visitors", "revenue", "conversion_rate", "aov", "upt"],
+                "visits", "unique_visitors", "revenue", "conversion_rate", "aov", "upt", "cart_abandonment_rate"],
             "compare_metrics": [
-                "Visits", "Unique Visitors", "Revenue", "Conversion Rate", "Average Order Value", "Units Per Transaction"]
+                "Visits", "Unique Visitors", "Revenue", "Conversion Rate", "Average Order Value", "Units Per Transaction", "Cart Abandonment Rate"]
             
         },
 
@@ -90,9 +91,9 @@
             "primary_metric_name": "aov",
             "synonyms": ["average order value", "basket value", "average basket value"],
             "secondary_metric_name": [
-                "visits", "unique_visitors", "orders", "revenue", "conversion_rate", "upt"],
+                "visits", "unique_visitors", "orders", "revenue", "conversion_rate", "upt", "cart_abandonment_rate"],
             "compare_metrics": [
-                "Visits", "Unique Visitors", "Orders", "Revenue", "Conversion Rate", "Units Per Transaction"]
+                "Visits", "Unique Visitors", "Orders", "Revenue", "Conversion Rate", "Units Per Transaction", "Cart Abandonment Rate"]
             
         },
         {
@@ -118,9 +119,9 @@
             "primary_metric_name": "conversion_rate",
             "synonyms": ["conversion ratio", "conversion rate"],
             "secondary_metric_name": [
-                "visits", "unique_visitors", "orders", "revenue", "aov", "upt"],
+                "visits", "unique_visitors", "orders", "revenue", "aov", "upt", "cart_abandonment_rate"],
             "compare_metrics": [
-                "Visits", "Unique Visitors", "Orders", "Revenue", "Average Order Value", "Units Per Transaction"]
+                "Visits", "Unique Visitors", "Orders", "Revenue", "Average Order Value", "Units Per Transaction", "Cart Abandonment Rate"]
             
         },
         {
@@ -163,37 +164,24 @@
     },
 
     "db_schema": {
-        "table_name": "adobe_ecommerce",
+        "table_name": "adobe_clickstream",
         "col_dimensions": [
-            "region", "country","campaign", 
-            "mobile_device_type", "product_series", 
-            "product_subseries"
-          ],
+            "campaign", "region", "country", "city",
+            "product", "browser", "mobile_device_type", 
+            "referring_domain", "new_repeat_visitor"
+        ],
         "col_metrics": [
-            "unique_visitors",
-            "visits",
-            "page_views",
-            "carts",
-            "cart_additions",
-            "checkouts",
-            "orders",
-            "units",
+            "clicks_to_page",
+            "visits", 
+            "unique_visitors", 
+            "product_views",
+            "cart_views", 
+            "cart_additions", 
+            "cart_open",
+            "checkouts", 
+            "orders", 
             "revenue",
-            "aov",
-            "cart_open_to_checkout_initiation",
-            "checkout_initiation_to_orders",
-            "upt",
-            "visit_depth",
-            "avg_session_duration",
-            "abandoned",
-            "abandonment_rate",
-            "buyer_conversion",
-            "abandoned_revenue",
-            "page_views_per_visitor",
-            "click_throughs",
-            "internal_searches",
-            "shop_visits",
-            "visit_duration"
+            "units"            
         ],
         "col_timeseries": ["week_start_date"]
     }

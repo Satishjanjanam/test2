@@ -24,11 +24,12 @@ class DateUtils(object):
     def get_nlast_weeks(last_week, to_, past_n=24):
 
         last_week = datetime.strptime(last_week, '%Y-%m-%d')
-        end_date = to_
         if to_ == "":
             curr_date = datetime.today().replace(
                 hour=0, minute=0, second=0, microsecond=0)
             end_date = curr_date + timedelta(-curr_date.weekday())
+        else:
+            end_date = datetime.strptime(to_, '%Y-%m-%d')
         nweeks = [end_date, last_week]
         for i in range(past_n-1):
             past_date = last_week - timedelta(weeks=i+1)
@@ -43,10 +44,11 @@ class DateUtils(object):
     def get_nlast_days(last_day, to_, past_n=24):
 
         last_day = datetime.strptime(last_day, '%Y-%m-%d')
-        end_date = to_
         if to_ == "":
             end_date = datetime.today().replace(
                 hour=0, minute=0, second=0, microsecond=0)
+        else:
+            end_date = datetime.strptime(to_, '%Y-%m-%d')
         ndays = [end_date, last_day]
         for i in range(past_n-1):
             past_date = last_day - timedelta(days=i+1)
@@ -61,11 +63,12 @@ class DateUtils(object):
     def get_nlast_months(last_month, to_, past_n=12):
 
         last_month = datetime.strptime(last_month, '%Y-%m-%d')
-        end_date = to_
         if to_ == "":
             curr_date = datetime.today().replace(
                 hour=0, minute=0, second=0, microsecond=0)
             end_date = ((curr_date.replace(day=1)) - (timedelta(days=0)))
+        else:
+            end_date = datetime.strptime(to_, '%Y-%m-%d')
         nmonths = [end_date, last_month]
         for i in range(past_n-1):
             past_date = last_month - relativedelta(months=i+1)
@@ -80,11 +83,12 @@ class DateUtils(object):
     def get_nlast_years(last_year, to_, past_n=12):
 
         last_year = datetime.strptime(last_year, '%Y-%m-%d')
-        end_date = to_
         if to_ == "":
             curr_date = datetime.today().replace(
                 hour=0, minute=0, second=0, microsecond=0)
             end_date = curr_date.replace(day=1, month=1)
+        else:
+            end_date = datetime.strptime(to_, '%Y-%m-%d')
         nyears = [end_date, last_year]
         for i in range(past_n-1):
             past_date = last_year - relativedelta(years=i+1)
@@ -99,11 +103,12 @@ class DateUtils(object):
     def get_nlast_quarters(last_quarter, to_, past_n=12):
 
         last_quarter = datetime.strptime(last_quarter, '%Y-%m-%d')
-        end_date = to_
         if to_ == "":
             quarter_number = round((last_quarter.month - 1) / 3 + 1)
             end_date = datetime(last_quarter.year, 3 * quarter_number + 1, 1)\
                 + timedelta(days=0)
+        else:
+            end_date = datetime.strptime(to_, '%Y-%m-%d')
         nquarters = [end_date, last_quarter]
         for i in range(past_n-1):
             past_date = last_quarter - relativedelta(months=(i+1) * 3)

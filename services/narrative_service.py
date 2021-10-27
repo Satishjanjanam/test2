@@ -305,10 +305,12 @@ class RuleBasedNarrativeModel(object):
                 condition = '(' + condition + ')'
                 all_conditions.append(condition)
                 
+        all_conditions = list(set(all_conditions))      
         all_conditions = ' AND '.join(all_conditions)
         
         # all columns
         all_cols = [time_series_col_name] + col_metrics + dimensions
+        all_cols = list(set(all_cols))
         all_cols = ', '.join(all_cols)
         
         

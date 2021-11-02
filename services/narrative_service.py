@@ -12,6 +12,8 @@ from services.common import DateUtils
 from services.common import MetricUtils
 from services.anomaly_service import AnomalyDetector
 
+from services.constants import LOOKUP_DIMENSION
+
 try:
     from cfuzzyset import cFuzzySet as FuzzySet
 except ImportError:
@@ -151,11 +153,17 @@ class RuleBasedNarrativeModel(object):
                         else:
                             dict_['value'] = None
                     elif col_name == "country":
+                        value_ = value
                         confidence, value = self.country_index.get(value)[0]
                         if confidence >= threshold:
                             dict_['value'] = value
                         else:
                             dict_['value'] = None
+
+                            # we didn't get match for dimension value in DB
+                            if value_ in LOOKUP_DIMENSION[col_name]["examples"]:
+                                dict_['value'] = LOOKUP_DIMENSION[col_name]["synonym"]
+                             
                     elif col_name == "city":
                         confidence, value = self.city_index.get(value)[0]
                         if confidence >= threshold:

@@ -116,7 +116,7 @@ class RuleBasedNarrativeModel(object):
     def validate_metric_dimension(self,
                         metric_name,
                         dimensions,
-                        threshold=0.5):
+                        threshold=0.4):
         
         is_validated = True
         # first check metric name present in index or not otherwise ignore it !
@@ -149,7 +149,8 @@ class RuleBasedNarrativeModel(object):
                     elif col_name == "region":
                         confidence, value = self.region_index.get(value)[0]
                         if confidence >= threshold:
-                            dict_['value'] = value
+                            # this is temperory
+                            dict_['value'] = value.upper()
                         else:
                             dict_['value'] = None
                     elif col_name == "country":
@@ -488,7 +489,13 @@ class NarrativeTemplate(object):
         for key,value in dict_placeholder.items():
             if isinstance(value, (np.floating, float)):
                 value = round(float(value), 3)
-            dict_placeholder[key] = value 
+            else:
+                if "_name" in key:
+                    if isinstance(value, str):
+                        if value.isupper() == False:
+                            value = value.title()
+
+            dict_placeholder[key] = value
         
         return dict_placeholder
     
@@ -540,7 +547,7 @@ class NarrativeTemplate(object):
         dict_placeholder = {
             "start_date": start_date,
             "metric_val": metric_val,
-            "metric_name": metric_col_name.title(),
+            "metric_name": metric_col_name,
             "metric_spike_drop": metric_spike_drop,
             "metric_above_below": metric_above_below,
             'val_spike_drop': val_spike_drop,

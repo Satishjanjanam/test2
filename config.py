@@ -13,7 +13,7 @@ IS_DEVELOPMENT = not args.prod
 with open('./configs/{}.json'.format('dev' if IS_DEVELOPMENT is True else 'prod')) as handle:
     env = json.loads(handle.read())
 
-PORT = os.environ['PORT'] if os.environ.get('PORT') is not None else 5002
+PORT = os.environ['PORT'] if os.environ.get('PORT') is not None else 6002
 
 BASE_URL = env["base_url"]
 

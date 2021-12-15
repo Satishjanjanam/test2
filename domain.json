@@ -1,8 +1,8 @@
 {
     "dimensions": [
-        "campaign", "region", "country", "city",
-        "product", "browser", "mobile_device_type", 
-        "referring_domain", "new_repeat_visitor"
+        "retailer", 
+        "brand", 
+        "category"
     ],
     "metrics": [
         {
@@ -29,9 +29,9 @@
             "primary_metric_name": "revenue",
             "synonyms": ["sales", "gross revenue", "demand revenue", "total revenue", "total sales"],
             "secondary_metric_name": [
-                "visits", "unique_visitors", "orders", "conversion_rate", "aov", "upt", "cart_abandonment_rate"],
+                "units"],
             "compare_metrics": [
-                "Visits", "Unique Visitors", "Orders", "Conversion Rate", "Average Order Value", "Units Per Transaction", "Cart Abandonment Rate"]
+                "Units"]
         },
 
         {
@@ -81,9 +81,9 @@
             "primary_metric_name": "units",
             "synonyms": ["quantity", "qty", "pieces", "unit"],
             "secondary_metric_name": [
-                "orders", "revenue", "conversion_rate", "aov", "upt"],
+                "revenue"],
             "compare_metrics": [
-                "Orders", "Revenue", "Conversion Rate", "Average Order Value", "Units Per Transaction"]
+                "Revenue"]
             
         },
 
@@ -140,13 +140,13 @@
         {
             "id": 1,
             "template": "The ${metric_name} for the week starting (${start_date}) saw a ${metric_spike_drop} of ${val_spike_drop}% ${metric_above_below} the average value expected for this period and had a value of ${metric_val}",
-            "valid_for": ["revenue", "conversion_rate", "upt", "aov"],
+            "valid_for": ["revenue"],
             "is_generic": false
         },
         {    
             "id": 2,
             "template": "The number of ${metric_name} for the week starting (${start_date}) saw a ${metric_spike_drop} of ${val_spike_drop}% ${metric_above_below} the average value expected for this period and had a value of ${metric_val}",
-            "valid_for": ["orders", "visits", "unique visitors"],
+            "valid_for": ["units"],
             "is_generic": false
         },
         {
@@ -164,22 +164,13 @@
     },
 
     "db_schema": {
-        "table_name": "adobe_clickstream",
+        "table_name": "mars_sales",
         "col_dimensions": [
-            "campaign", "region", "country", "city",
-            "product", "browser", "mobile_device_type", 
-            "referring_domain", "new_repeat_visitor"
+            "retailer", 
+            "brand", 
+            "category"
         ],
         "col_metrics": [
-            "clicks_to_page",
-            "visits", 
-            "unique_visitors", 
-            "product_views",
-            "cart_views", 
-            "cart_additions", 
-            "cart_open",
-            "checkouts", 
-            "orders", 
             "revenue",
             "units"            
         ],

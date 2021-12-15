@@ -53,7 +53,7 @@ class RuleBasedNarrativeModel(object):
         for dict_ in self.domain_config['metrics']:
             output = set([dict_['primary_metric_name']] + dict_['synonyms'])
             for m in output:
-                self.metric_index.add(m.lower())
+                self.metric_index.add(m)
 
         # index all the dimensions
         cols = ','.join(self.db_schema['col_dimensions'])
@@ -61,28 +61,15 @@ class RuleBasedNarrativeModel(object):
         query = "SELECT DISTINCT {} FROM {}".format(cols, table_name)
         df_distinct = self.db_conn.execute_sql(query)
         
-        
-        self.campaign_index = FuzzySet()
-        self.region_index = FuzzySet()
-        self.country_index = FuzzySet()
-        self.city_index = FuzzySet()
-        self.product_index = FuzzySet()
-        self.browser_index = FuzzySet()
-        self.mobile_device_type_index = FuzzySet()
-        self.referring_domain_index = FuzzySet()
-        self.new_repeat_visitor_index = FuzzySet()
-
+        self.retailer_index = FuzzySet()
+        self.brand_index = FuzzySet()
+        self.category_index = FuzzySet()
+    
         for tup in df_distinct.values:
-            self.campaign_index.add(tup[0].lower())
-            self.region_index.add(tup[1].lower())
-            self.country_index.add(tup[2].lower())
-            self.city_index.add(tup[3].lower())
-            self.product_index.add(tup[4].lower())
-            self.browser_index.add(tup[5].lower())
-            self.mobile_device_type_index.add(tup[6].lower())
-            self.referring_domain_index.add(tup[7].lower())
-            self.new_repeat_visitor_index.add(tup[8].lower())
-
+            self.retailer_index.add(tup[0])
+            self.brand_index.add(tup[1])
+            self.category_index.add(tup[2])
+    
         # create a synomys to metric mapping
         synonym2metric = {}
         # create metric to compare_metrics mapping
@@ -140,67 +127,34 @@ class RuleBasedNarrativeModel(object):
                     col_name = dict_["col_name"]
                     value = dict_["value"]
                     
-                    if col_name == "campaign":
-                        confidence, value = self.campaign_index.get(value)[0]
+                    if col_name == "retailer":
+                    
+                        confidence, value = self.retailer_index.get(value)[0]
                         if confidence >= threshold:
                             dict_['value'] = value
                         else:
                             dict_['value'] = None
-                    elif col_name == "region":
-                        confidence, value = self.region_index.get(value)[0]
+                    elif col_name == "brand":
+                    
+                        confidence, value = self.brand_index.get(value)[0]
                         if confidence >= threshold:
                             # this is temperory
-                            dict_['value'] = value.upper()
+                            dict_['value'] = value
                         else:
                             dict_['value'] = None
-                    elif col_name == "country":
-                        value_ = value
-                        confidence, value = self.country_index.get(value)[0]
+                    elif col_name == "category":
+                        # value_ = value
+
+                        confidence, value = self.category_index.get(value)[0]
                         if confidence >= threshold:
                             dict_['value'] = value
                         else:
                             dict_['value'] = None
 
-                            # we didn't get match for dimension value in DB
-                            if value_ in LOOKUP_DIMENSION[col_name]["examples"]:
-                                dict_['value'] = LOOKUP_DIMENSION[col_name]["synonym"]
+                            # # we didn't get match for dimension value in DB
+                            # if value_ in LOOKUP_DIMENSION[col_name]["examples"]:
+                            #     dict_['value'] = LOOKUP_DIMENSION[col_name]["synonym"]
                              
-                    elif col_name == "city":
-                        confidence, value = self.city_index.get(value)[0]
-                        if confidence >= threshold:
-                            dict_['value'] = value
-                        else:
-                            dict_['value'] = None
-                    elif col_name == "product":
-                        confidence, value = self.product_index.get(value)[0]
-                        if confidence >= threshold:
-                            dict_['value'] = value
-                        else:
-                            dict_['value'] = None
-                    elif col_name == "browser":
-                        confidence, value = self.browser_index.get(value)[0]
-                        if confidence >= threshold:
-                            dict_['value'] = value
-                        else:
-                            dict_['value'] = None
-                    elif col_name == "mobile_device_type":
-                        confidence, value = self.mobile_device_type_index.get(value)[0]
-                        if confidence >= threshold:
-                            dict_['value'] = value
-                        else:
-                            dict_['value'] = None
-                    elif col_name == "referring_domain":
-                        confidence, value = self.referring_domain_index.get(value)[0]
-                        if confidence >= threshold:
-                            dict_['value'] = value
-                        else:
-                            dict_['value'] = None
-                    elif col_name == "new_repeat_visitor":
-                        confidence, value = self.new_repeat_visitor_index.get(value)[0]
-                        if confidence >= threshold:
-                            dict_['value'] = value
-                        else:
-                            dict_['value'] = None
                 # remove the entity whose value is None (i.e not present in index)
                 dimensions = [dict_ for dict_ in dimensions if dict_['value'] is not None]
                 

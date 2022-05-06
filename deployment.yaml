@@ -1,0 +1,18 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: anomaly-detection
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: anomaly-detection
+  template:
+    metadata:
+      labels:
+        app: anomaly-detection
+    spec:
+      containers:
+      - image: discoverylabacr2.azurecr.io/anomaly-detection
+        imagePullPolicy: IfNotPresent
+        name: anomaly-detection

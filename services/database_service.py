@@ -13,12 +13,21 @@ class SQLDataBase(object):
     def connect_database(cls, config):
         """Get database"""
 
+        keepalive_kwargs = {
+            "keepalives": 1,
+            "keepalives_idle": 60,
+            "keepalives_interval": 10,
+            "keepalives_count": 5,
+        }
+
         conn = psycopg2.connect(
                 database=config["database"], 
                 user = config["user"], 
                 password = config["password"], 
                 host = config["host"], 
-                port = config["port"])
+                port = config["port"],
+                sslmode = "require",
+                **keepalive_kwargs)
 
         return cls(config, conn)
     

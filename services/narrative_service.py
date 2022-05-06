@@ -110,6 +110,7 @@ class RuleBasedNarrativeModel(object):
         self.metric2kpi = metric2kpi
 
         self.graph = self.domain_config['graph']
+        self.db_conn = None
         
         Logger.info("Sucessfully Created Index!")
 
@@ -270,6 +271,10 @@ class RuleBasedNarrativeModel(object):
                 timeline,
                 limit=-1):
         
+        # re create the connection
+        self.db_conn = SQLDataBase.connect_database(
+            self.database_creds)
+        
         metric_col_name = entity_mapping['metric']['col_name']
         metric_name = entity_mapping['metric']['name']
         # fill spaces in the name
@@ -373,6 +378,8 @@ class RuleBasedNarrativeModel(object):
         
         if len(data_timeline) > 0:
             data_timeline = pd.DataFrame.from_records(data_timeline)
+        
+        self.db_conn = None
      
         return data_timeline
     

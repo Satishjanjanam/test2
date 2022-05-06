@@ -1,28 +1,28 @@
+"""narrative service"""
+import json
+import random
 import os
 import sys
 sys.path.append(os.getcwd())
-
-import random
-import json
-import pandas as pd
 import numpy as np
-from string import Template
-from services.database_service import SQLDataBase
-from services.common import DateUtils 
-from services.common import MetricUtils
-from services.anomaly_service import AnomalyDetector
+import pandas as pd
 
-from services.constants import LOOKUP_DIMENSION
+from string import Template
 
 try:
     from cfuzzyset import cFuzzySet as FuzzySet
 except ImportError:
     from fuzzyset import FuzzySet
 
+from services.common import DateUtils
 from utils.logging_handler import Logger
+from services.constants import LOOKUP_DIMENSION
+from services.anomaly_service import AnomalyDetector
+from services.common import MetricUtils
+from services.database_service import SQLDataBase
 
-
-class RuleBasedNarrativeModel(object):
+class RuleBasedNarrativeModel:
+    """RuleBasedNarrativeModel class"""
 
     def __init__(self,
                  config):
@@ -39,15 +39,16 @@ class RuleBasedNarrativeModel(object):
         self._create_index()
 
     def load_domain(self, domain_path):
+        """function to load a domain"""
         with open(domain_path, 'r') as file:
             domain_config = json.loads(file.read())
 
         return domain_config
 
     def _create_index(self, ):
-
+        """function to create a index"""
         Logger.info("Please wait while we start Creating Index...")
-        
+
         # index all the metrics
         self.metric_index = FuzzySet()
         for dict_ in self.domain_config['metrics']:
@@ -58,10 +59,9 @@ class RuleBasedNarrativeModel(object):
         # index all the dimensions
         cols = ','.join(self.db_schema['col_dimensions'])
         table_name = self.db_schema['table_name']
-        query = "SELECT DISTINCT {} FROM {}".format(cols, table_name)
+        query = f"SELECT DISTINCT {cols} FROM {table_name}"
         df_distinct = self.db_conn.execute_sql(query)
-        
-        
+
         self.campaign_index = FuzzySet()
         self.region_index = FuzzySet()
         self.country_index = FuzzySet()
@@ -97,7 +97,7 @@ class RuleBasedNarrativeModel(object):
             for col_name, name in zip(secondary_metrics, compare_metrics):
                 kpi.append({
                     'name': name,
-                    'col_name':col_name
+                    'col_name': col_name
                 })
             metric2kpi[primary_metric_name] = kpi
             # handle synomys
@@ -105,20 +105,20 @@ class RuleBasedNarrativeModel(object):
             synonym2metric[primary_metric_name] = primary_metric_name
             for syn in synonyms:
                 synonym2metric[syn] = primary_metric_name
-        
+
         self.synonym2metric = synonym2metric
         self.metric2kpi = metric2kpi
 
         self.graph = self.domain_config['graph']
         self.db_conn = None
-        
+
         Logger.info("Sucessfully Created Index!")
 
     def validate_metric_dimension(self,
-                        metric_name,
-                        dimensions,
-                        threshold=0.4):
-        
+                                  metric_name,
+                                  dimensions,
+                                  threshold=0.4):
+        """function to validate metric and dimension"""
         is_validated = True
         # first check metric name present in index or not otherwise ignore it !
         confidence, value = self.metric_index.get(metric_name)[0]
@@ -126,7 +126,7 @@ class RuleBasedNarrativeModel(object):
             metric_name = value
         else:
             metric_name = None
-        
+
         entity_mapping = {}
 
         if metric_name is not None:
@@ -140,7 +140,7 @@ class RuleBasedNarrativeModel(object):
                 for dict_ in dimensions:
                     col_name = dict_["col_name"]
                     value = dict_["value"]
-                    
+
                     if col_name == "campaign":
                         confidence, value = self.campaign_index.get(value)[0]
                         if confidence >= threshold:
@@ -164,8 +164,9 @@ class RuleBasedNarrativeModel(object):
 
                             # we didn't get match for dimension value in DB
                             if value_ in LOOKUP_DIMENSION[col_name]["examples"]:
-                                dict_['value'] = LOOKUP_DIMENSION[col_name]["synonym"]
-                             
+                                dict_[
+                                    'value'] = LOOKUP_DIMENSION[col_name]["synonym"]
+
                     elif col_name == "city":
                         confidence, value = self.city_index.get(value)[0]
                         if confidence >= threshold:
@@ -185,26 +186,30 @@ class RuleBasedNarrativeModel(object):
                         else:
                             dict_['value'] = None
                     elif col_name == "mobile_device_type":
-                        confidence, value = self.mobile_device_type_index.get(value)[0]
+                        confidence, value = self.mobile_device_type_index.get(value)[
+                            0]
                         if confidence >= threshold:
                             dict_['value'] = value
                         else:
                             dict_['value'] = None
                     elif col_name == "referring_domain":
-                        confidence, value = self.referring_domain_index.get(value)[0]
+                        confidence, value = self.referring_domain_index.get(value)[
+                            0]
                         if confidence >= threshold:
                             dict_['value'] = value
                         else:
                             dict_['value'] = None
                     elif col_name == "new_repeat_visitor":
-                        confidence, value = self.new_repeat_visitor_index.get(value)[0]
+                        confidence, value = self.new_repeat_visitor_index.get(value)[
+                            0]
                         if confidence >= threshold:
                             dict_['value'] = value
                         else:
                             dict_['value'] = None
                 # remove the entity whose value is None (i.e not present in index)
-                dimensions = [dict_ for dict_ in dimensions if dict_['value'] is not None]
-                
+                dimensions = [dict_ for dict_ in dimensions if dict_[
+                    'value'] is not None]
+
             entity_mapping = {
                 "metric": metric,
                 "dimensions": dimensions
@@ -216,11 +221,11 @@ class RuleBasedNarrativeModel(object):
 
     def get_bm_narrative_template(
             self, metric_name):
-        
-        bm_id , bm_template = None, None
+        """function to get best match narrative template"""
+        bm_id, bm_template = None, None
         # get the candidate templates
         candidate_templates = self.domain_config["narratives"]
-        
+
         for dict_ in candidate_templates:
             valid_for = dict_['valid_for']
             if metric_name in valid_for:
@@ -228,7 +233,8 @@ class RuleBasedNarrativeModel(object):
                 break
 
         if bm_template is None:
-            options = [dict_  for dict_ in candidate_templates if dict_['is_generic'] == True]
+            options = [dict_ for dict_ in candidate_templates if dict_[
+                'is_generic'] is True]
 
             if len(options) > 1:
                 dict_ = random.choice(options)
@@ -236,11 +242,11 @@ class RuleBasedNarrativeModel(object):
             else:
                 dict_ = options[0]
                 bm_id, bm_template = dict_['id'], dict_["template"]
-            
-        return bm_id, bm_template
-    
-    def get_timeline(self, time_period):
 
+        return bm_id, bm_template
+
+    def get_timeline(self, time_period):
+        """function to get timeline"""
         grain = time_period['grain']
         from_ = time_period['from']
         to_ = time_period['to']
@@ -251,7 +257,7 @@ class RuleBasedNarrativeModel(object):
 
         elif grain == 'month':
             timeline = DateUtils.get_nlast_months(from_, to_)
-            
+
         elif grain == 'year':
             timeline = DateUtils.get_nlast_years(from_, to_)
 
@@ -262,25 +268,24 @@ class RuleBasedNarrativeModel(object):
             timeline = DateUtils.get_nlast_quarters(from_, to_)
         else:
             timeline = DateUtils.get_nlast_weeks(from_, to_)
-        
+
         return timeline
 
-
     def get_data_from_db(self,
-                entity_mapping,
-                timeline,
-                limit=-1):
-        
+                         entity_mapping,
+                         timeline,
+                         limit=-1):
+        """function to get data from database"""
         # re create the connection
         self.db_conn = SQLDataBase.connect_database(
             self.database_creds)
-        
+
         metric_col_name = entity_mapping['metric']['col_name']
         metric_name = entity_mapping['metric']['name']
         # fill spaces in the name
-        if len(metric_name.split()) > 1: 
-            metric_name= '_'.join(metric_name.split())
-        
+        if len(metric_name.split()) > 1:
+            metric_name = '_'.join(metric_name.split())
+
         # time_period column
         time_series_col_name = self.db_schema['col_timeseries'][0]
         # col metrics
@@ -293,13 +298,12 @@ class RuleBasedNarrativeModel(object):
         # range
         week_start_date_from = timeline[0]
         week_start_date_to = timeline[-1]
-            
+
         # define a list of all conditions
         all_conditions = [
-            "({}>='{}' AND {}<'{}')".format(
-                time_series_col_name, week_start_date_from , 
-                time_series_col_name, week_start_date_to)]
-                
+            f"({time_series_col_name}>='{week_start_date_from}' AND {time_series_col_name}<'{week_start_date_to}')"
+        ]
+
         dimensions = []
         if entity_mapping['dimensions'] is not None:
             dim2val = {}
@@ -312,51 +316,49 @@ class RuleBasedNarrativeModel(object):
                     dim2val[col_name] = [value]
                 else:
                     dim2val[col_name].append(value)
-            
+
             for dim, val in dim2val.items():
                 # for a dimension with multiple values add OR condition
-                condition = ' OR '.join(["{}='{}'".format(dim, v) for v in val])
+                condition = ' OR '.join(
+                    [f"{dim}='{v}'" for v in val])
                 condition = '(' + condition + ')'
                 all_conditions.append(condition)
-                
-        all_conditions = list(set(all_conditions))      
+
+        all_conditions = list(set(all_conditions))
         all_conditions = ' AND '.join(all_conditions)
-        
+
         # all columns
         all_cols = [time_series_col_name] + col_metrics + dimensions
         all_cols = list(set(all_cols))
         all_cols = ', '.join(all_cols)
-        
-        
+
         # execute the SQL query based on cols and conditions
         table_name = self.db_schema['table_name']
         query = None
         if limit > 0:
-            query = "SELECT {} FROM {} WHERE {} LIMIT {}".format(
-                all_cols, table_name, all_conditions, limit)
+            query = f"SELECT {all_cols} FROM {table_name} WHERE {all_conditions} LIMIT {limit}"
         else:
-            query = "SELECT {} FROM {} WHERE {}".format(
-                all_cols, table_name, all_conditions)
-        
-        Logger.info("Run SQL query= {}".format(query))
+            query = f"SELECT {all_cols} FROM {table_name} WHERE {all_conditions}"
+
+        Logger.info(f"Run SQL query= {query}")
         df_sql_output = self.db_conn.execute_sql(query)
-       
+
         data_timeline = []
         size = len(timeline) - 1
         for _iter in range(size):
             start_date = timeline[_iter]
             end_date = timeline[_iter + 1]
-            df_sub = df_sql_output[(df_sql_output[time_series_col_name]>=start_date)
-                        & (df_sql_output[time_series_col_name]<end_date)]
+            df_sub = df_sql_output[(df_sql_output[time_series_col_name] >= start_date)
+                                   & (df_sql_output[time_series_col_name] < end_date)]
             df_sub = df_sub[col_metrics]
-            
-            dict_ = dict(df_sub.sum(axis = 0))
+
+            dict_ = dict(df_sub.sum(axis=0))
             for key, value in dict_.items():
                 if key == "revenue":
-                    dict_[key] = round(value,2)
+                    dict_[key] = round(value, 2)
                 else:
                     dict_[key] = int(value)
-        
+
             # check if primary_metric is in dict_ or not
             if metric_col_name not in dict_:
                 value = MetricUtils.calculate_extra_metric(
@@ -375,17 +377,16 @@ class RuleBasedNarrativeModel(object):
             dict_[time_series_col_name] = DateUtils.format_date_to_str(
                 start_date)
             data_timeline.append(dict_)
-        
+
         if len(data_timeline) > 0:
             data_timeline = pd.DataFrame.from_records(data_timeline)
-        
+
         self.db_conn = None
-     
+
         return data_timeline
-    
 
     def predict_anomaly_narratives(self, data, entity_mapping, **kwargs):
-
+        """function to predict anomalies with narratives"""
         # create the anomaly object
         anomaly_detector = AnomalyDetector(data)
         past_n = kwargs.get('past_n', 8)
@@ -396,7 +397,7 @@ class RuleBasedNarrativeModel(object):
         # comparable kpis
         metric_kpi = self.metric2kpi[metric_col_name]
         all_metrics = [entity_mapping['metric']] + metric_kpi
- 
+
         output = {}
         for metric_ in all_metrics:
 
@@ -409,34 +410,33 @@ class RuleBasedNarrativeModel(object):
             # find the best template
             bm_id, bm_template = self.get_bm_narrative_template(
                 metric_col_name)
-        
+
             for dict_ in predictions:
                 narrative, narrative_html = "", ""
-                if dict_['is_anomaly'] == True:
+                if dict_['is_anomaly'] is True:
                     narrative, narrative_html = NarrativeTemplate.get_narative_by_template(
-                                    bm_id, dict_, metric_name, 
-                                    time_series_col_name,
-                                    bm_template)
+                        dict_, metric_name,
+                        time_series_col_name,
+                        bm_template)
                 dict_['narrative'] = narrative
                 dict_['narrative_html'] = narrative_html
-             
+
             # we have updated predictions for metric containing narrative
             output[metric_col_name] = predictions
-        
+
         return output
 
-
     def prepare_response_payload(self,
-                output, entity_mapping, is_validated=True):
-        
+                                 output, entity_mapping,
+                                 is_validated=True):
+        """function to get final payload"""
         if is_validated:
-           
             metric_col_name = entity_mapping['metric']['col_name']
             metric_name = entity_mapping['metric']['name']
-            
+
             compare_metrics = self.metric2kpi[metric_col_name]
             graph = self.graph
-           
+
             response = {
                 "code": 200,
                 "anomaly": output,
@@ -447,8 +447,6 @@ class RuleBasedNarrativeModel(object):
                 "compare_metrics": compare_metrics,
                 "graph": graph
             }
-            
-            return response
         else:
             response = {
                 "code": 428,
@@ -457,15 +455,15 @@ class RuleBasedNarrativeModel(object):
                 "compare_metrics": None,
                 "graph": None,
             }
-            
-            return response
+
+        return response
 
 
-class NarrativeTemplate(object):
-
+class NarrativeTemplate:
+    """NarrativeTemplate class"""
     @staticmethod
     def convert_placeholders_to_html(dict_placeholder):
-        
+        """helper function to convert placeholder to html"""
         dict_placeholder_html = {}
         for key, value in dict_placeholder.items():
 
@@ -474,41 +472,45 @@ class NarrativeTemplate(object):
             if key in ["val_spike_drop"]:
                 if value > 0:
                     # make it green
-                    value_html = "<span style='color:green;font-weight:bold;'>{}</span>".format(value)
+                    value_html = \
+                        f"<span style='color:green;font-weight:bold;'>{value}</span>"
                 elif value < 0:
                     # make it red
-                    value_html = "<span style='color:red;font-weight:bold;'>{}</span>".format(value)
+                    value_html = \
+                        f"<span style='color:red;font-weight:bold;'>{value}</span>"
                 else:
                     # make it yellow
-                    value_html = "<span style='color:yellow;font-weight:bold;'>{}</span>".format(value)
+                    value_html = \
+                        f"<span style='color:yellow;font-weight:bold;'>{value}</span>"
             else:
                 if key != "metric_above_below":
-                    value_html = "<span style='font-weight:bold;'>{}</span>".format(value)
+                    value_html = \
+                    f"<span style='font-weight:bold;'>{value}</span>"
 
             dict_placeholder_html[key] = value_html
-        
+
         return dict_placeholder_html
-    
+
     @staticmethod
     def clean_placeholder(dict_placeholder):
-
+        """helper function to clean placeholder"""
         # round off the float values if missed
-        for key,value in dict_placeholder.items():
+        for key, value in dict_placeholder.items():
             if isinstance(value, (np.floating, float)):
                 value = round(float(value), 3)
             else:
                 if "_name" in key:
                     if isinstance(value, str):
-                        if value.isupper() == False:
+                        if value.isupper() is False:
                             value = value.title()
 
             dict_placeholder[key] = value
-        
+
         return dict_placeholder
-    
+
     @staticmethod
     def helper_spike_drop(curr_value, prev_value):
-
+        """helper function to find spike and drop"""
         spike_drop = None
         if prev_value > curr_value:
             spike_drop = '(drop)'
@@ -516,16 +518,16 @@ class NarrativeTemplate(object):
             spike_drop = '(spike)'
         prev_value_ = prev_value
         if prev_value_ == 0:
-            prev_value_ = 1.0 #to avoid dividing by 0
+            prev_value_ = 1.0  # to avoid dividing by 0
 
         perc_change = round(
             ((curr_value - prev_value)/prev_value_ * 100.0), 2)
-        
+
         return spike_drop, perc_change
-    
+
     @staticmethod
     def helper_above_below(curr_value, prev_value):
-        
+        """helper function to find above and below"""
         above_below = None
         if curr_value > prev_value:
             above_below = 'above'
@@ -533,24 +535,24 @@ class NarrativeTemplate(object):
             above_below = 'below'
 
         return above_below
-    
+
     @staticmethod
-    def get_narative_by_template(id, prediction, metric_col_name, 
-                      time_series_col_name, template):
-        """ 
-            id = (int) Id of the Narrative Template
+    def get_narative_by_template(prediction, metric_col_name,
+                                 time_series_col_name, template):
+        """ function to get narrative
+            bm_id = (int) Id of the Narrative Template
             prediction = weekly prediction
             metric_name = name of metric
         """
         start_date = prediction[time_series_col_name]
-        metric_val =  prediction['value']
+        metric_val = prediction['value']
         sma_bound = prediction['sma_bound']
 
         metric_spike_drop, val_spike_drop = NarrativeTemplate.helper_spike_drop(
             metric_val, sma_bound)
         metric_above_below = NarrativeTemplate.helper_above_below(
             metric_val, sma_bound)
-      
+
         dict_placeholder = {
             "start_date": start_date,
             "metric_val": metric_val,
@@ -564,13 +566,11 @@ class NarrativeTemplate(object):
             dict_placeholder)
         dict_placeholder_html = NarrativeTemplate.convert_placeholders_to_html(
             dict_placeholder)
-        
+
         template = Template(template)
         narrative = template.safe_substitute(
-                    **dict_placeholder)
+            **dict_placeholder)
         narrative_html = template.safe_substitute(
-                    **dict_placeholder_html)
-        
+            **dict_placeholder_html)
+
         return narrative, narrative_html
-    
-    

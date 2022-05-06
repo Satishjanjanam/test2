@@ -1,4 +1,3 @@
-import os
 import tornado.web
 from config import BASE_URL, SERVICE_ANOMALY_DETECTOR, IS_DEVELOPMENT, STATIC_PATH
 from routes.error_handler import ErrorHandler
@@ -6,6 +5,7 @@ from routes.main_handler import MainHandler
 from routes.anomaly_detector_handler import AnomalyDetectorHandler
 
 def make_app():
+    """make_app"""
     settings = {
         "default_handler_class": ErrorHandler,
         "debug": IS_DEVELOPMENT,

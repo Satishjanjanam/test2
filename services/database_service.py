@@ -26,7 +26,8 @@ class SQLDataBase:
             user=config["user"],
             password=config["password"],
             host=config["host"],
-            port=config["port"])
+            port=config["port"]
+        )
             # sslmode="require",
             # **keepalive_kwargs)
 

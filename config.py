@@ -29,11 +29,11 @@ STATIC_PATH = env['static']
 CONFIG = {
     "domain_path": "./domain.json",
     "db_creds": {
-        "database": "discovery",
-        "user": "postgres",
-        "password": "OZ@beEI*ecFp",
-        "host": "167.71.234.110",
-        "port": "5432",
+        "database": os.environ["DB_NAME"],
+        "user": os.environ["DB_USER"],
+        "password":  os.environ["DB_PASSWORD"],
+        "host": os.environ["DB_HOST"],
+        "port": os.environ["DB_PORT"],
         "reconnect": True
     }
 }

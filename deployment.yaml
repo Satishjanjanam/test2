@@ -13,6 +13,22 @@ spec:
         app: anomaly-detection
     spec:
       containers:
-      - image: discoverylabacr2.azurecr.io/consumer-relation-anomaly-detection
+      - image: discoverylabacr2.azurecr.io/consumer-realation-anomaly-detection
         imagePullPolicy: IfNotPresent
         name: anomaly-detection
+        
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: anomaly-detection
+  labels:
+    app: anomaly-detection
+spec:
+  type: NodePort
+  ports:
+  - port: 5002
+    protocol: TCP
+    targetPort: 5002
+  selector:
+    app: anomaly-detection

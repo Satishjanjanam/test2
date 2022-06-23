@@ -13,7 +13,7 @@ spec:
         app: anomaly-detection
     spec:
       containers:
-      - image: discoverylabacr2.azurecr.io/consumer-insights-anomaly-detection:1.0
+      - image: discoverylabacr2.azurecr.io/consumer-insights-anomaly-detection
         imagePullPolicy: IfNotPresent
         name: anomaly-detection
         

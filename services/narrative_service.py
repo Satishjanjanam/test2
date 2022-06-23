@@ -30,6 +30,7 @@ class RuleBasedNarrativeModel:
         self.domain_config = self.load_domain(self.domain_path)
 
         self.database_creds = config['db_creds']
+        Logger.info("Make a db connection")
         self.db_conn = SQLDataBase.connect_database(
             self.database_creds)
 
@@ -110,7 +111,7 @@ class RuleBasedNarrativeModel:
         self.metric2kpi = metric2kpi
 
         self.graph = self.domain_config['graph']
-        self.db_conn = None
+        #self.db_conn = None
 
         Logger.info("Sucessfully Created Index!")
 
@@ -277,8 +278,8 @@ class RuleBasedNarrativeModel:
                          limit=-1):
         """function to get data from database"""
         # re create the connection
-        self.db_conn = SQLDataBase.connect_database(
-            self.database_creds)
+        #self.db_conn = SQLDataBase.connect_database(
+        #    self.database_creds)
 
         metric_col_name = entity_mapping['metric']['col_name']
         metric_name = entity_mapping['metric']['name']
@@ -381,7 +382,7 @@ class RuleBasedNarrativeModel:
         if len(data_timeline) > 0:
             data_timeline = pd.DataFrame.from_records(data_timeline)
 
-        self.db_conn = None
+        #self.db_conn = None
 
         return data_timeline
 
